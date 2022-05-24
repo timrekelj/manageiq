@@ -72,18 +72,25 @@ module SupportsFeatureMixin
   # query instance for the reason why the feature is unsupported
   def unsupported_reason(feature)
     feature = feature.to_sym
-    public_send("supports_#{feature}?") unless unsupported.key?(feature)
+    supports?(feature) unless unsupported.key?(feature)
     unsupported[feature]
   end
 
   # query the instance if the feature is supported or not
   def supports?(feature)
+    # AvailabilityMixin and that feature is used
+    method_name = "validate_#{feature}"
+    if respond_to?(:is_available?) && respond_to?(method_name)
+      # e.g.: {:available => true,  :message => nil}
+      rslts = send(method_name)
+      if rslts.kind_of?(Hash)
+        unsupported.delete(feature)
+        unsupported_reason_add(feature, rslts[:message]) unless rslts[:available]
+        return rslts[:available]
+      end
+    end
+    # /AvailabilityMixin
     public_send("supports_#{feature}?")
-  end
-
-  # query the instance if a feature is generally known
-  def feature_known?(feature)
-    self.class.feature_known?(feature)
   end
 
   private
@@ -125,6 +132,10 @@ module SupportsFeatureMixin
       supported_subclasses.select { |subclass| subclass.supports?(feature) }
     end
 
+    def types_supporting(feature)
+      subclasses_supporting(feature).map(&:name)
+    end
+
     # Provider classes that support this feature
     def provider_classes_supporting(feature)
       subclasses_supporting(feature).map(&:module_parent)
@@ -134,7 +145,7 @@ module SupportsFeatureMixin
     def supporting(feature)
       # First find all instances where the class supports <feature> then select instances
       # which also support <feature> (e.g. the supports block does not add an unsupported_reason)
-      where(:type => subclasses_supporting(feature).map(&:name)).select { |instance| instance.supports?(feature) }
+      where(:type => types_supporting(feature)).select { |instance| instance.supports?(feature) }
     end
 
     # Providers that support this feature

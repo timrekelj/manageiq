@@ -75,6 +75,8 @@ class VmOrTemplate < ApplicationRecord
   belongs_to                :cloud_tenant
   belongs_to                :flavor
 
+  belongs_to                :placement_group
+
   belongs_to                :storage
   belongs_to                :storage_profile
   belongs_to                :ext_management_system, :foreign_key => "ems_id", :inverse_of => :vms_and_templates
@@ -146,6 +148,7 @@ class VmOrTemplate < ApplicationRecord
   virtual_column :is_evm_appliance,                     :type => :boolean,    :uses => :miq_server
   virtual_column :os_image_name,                        :type => :string,     :uses => [:operating_system, :hardware]
   virtual_column :platform,                             :type => :string,     :uses => [:operating_system, :hardware]
+  virtual_column :product_name,                         :type => :string,     :uses => [:operating_system]
   virtual_column :vendor_display,                       :type => :string
   virtual_column :v_owning_cluster,                     :type => :string,     :uses => :ems_cluster
   virtual_column :v_owning_resource_pool,               :type => :string,     :uses => :all_relationships
@@ -251,7 +254,7 @@ class VmOrTemplate < ApplicationRecord
       return nil if as.nil? || as.value.nil?
 
       return case t
-             when :boolean then ActiveRecord::ConnectionAdapters::Column.value_to_boolean(as.value)
+             when :boolean then ActiveRecord::Type::Boolean.new.cast(as.value)
              when :integer then as.value.to_i
              when :float then as.value.to_f
              else as.value.to_s

@@ -350,6 +350,32 @@ RSpec.describe VmOrTemplate do
       @options = {:hdw_attr => :memory_mb}
     end
 
+    context "#advanced_settings" do
+      describe "#paravirtualization" do
+        context "with no advanced_setting" do
+          it "returns nil" do
+            expect(@vm.paravirtualization).to be_nil
+          end
+        end
+
+        context "with vmi.present 'false'" do
+          before { @vm.advanced_settings.create!(:name => "vmi.present", :value => "false") }
+
+          it "returns false" do
+            expect(@vm.paravirtualization).to be_falsey
+          end
+        end
+
+        context "with vmi.present 'true'" do
+          before { @vm.advanced_settings.create!(:name => "vmi.present", :value => "true") }
+
+          it "returns false" do
+            expect(@vm.paravirtualization).to be_truthy
+          end
+        end
+      end
+    end
+
     it "with no drift states" do
       expect(@vm.reconfigured_hardware_value?(@options)).to be_falsey
     end
@@ -1504,6 +1530,27 @@ RSpec.describe VmOrTemplate do
       policy_event = FactoryBot.create(:policy_event, :target_class => "VmOrTemplate", :target_id => vm.id)
 
       expect(vm.policy_events).to eq([policy_event])
+    end
+  end
+
+  describe "#product_name" do
+    it "handles no os" do
+      expect(vm.product_name).to be_blank
+    end
+
+    it "uses os" do
+      os = OperatingSystem.create!(:product_name => "test")
+      vm = FactoryBot.create(:vm_or_template, :operating_system => os)
+
+      expect(vm.product_name).to eq(os.product_name)
+    end
+
+    it "uses parent os" do
+      os = OperatingSystem.create!(:product_name => "test")
+      parent = FactoryBot.create(:vm_or_template, :operating_system => os)
+      vm = FactoryBot.create(:vm_or_template, :genealogy_parent => parent)
+
+      expect(vm.product_name).to eq(os.product_name)
     end
   end
 

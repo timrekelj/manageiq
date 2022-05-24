@@ -11,6 +11,7 @@ RSpec.describe MiqEnvironment do
 
     context "Host Info" do
       example "fully_qualified_domain_name" do
+        skip if RUBY_PLATFORM.include?("darwin")
         expect(described_class.fully_qualified_domain_name).to eq(`hostname -f`.chomp)
       end
 
@@ -29,13 +30,6 @@ RSpec.describe MiqEnvironment do
     end
 
     context "Command" do
-      context ".supports_memcached?" do
-        it "should run once and cache the result" do
-          expect(MiqEnvironment::Command).to receive(:is_linux?).once.and_return(false)
-          assert_same_result_every_time(:supports_memcached?, false)
-        end
-      end
-
       context ".supports_nohup_and_backgrounding?" do
         it "should run once and cache the result" do
           expect(MiqEnvironment::Command).to receive(:is_appliance?).once.and_return(false)
